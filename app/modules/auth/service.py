@@ -27,13 +27,49 @@ class AuthService:
         self.password_reset_otp_expire_minutes = password_reset_otp_expire_minutes
 
     @staticmethod
-    def _build_user_response(user):
+    def _get_role_name(user) -> str | None:
+        if not user.role:
+            return None
+        return user.role.name
+
+    @classmethod
+    def _is_super_admin(cls, user) -> bool:
+        return cls._get_role_name(user) == "SUPER_ADMIN"
+
+    @classmethod
+    def _build_token_claims(cls, user):
+        claims = {
+            "email": user.email,
+            "is_super_admin": cls._is_super_admin(user),
+        }
+        role_name = cls._get_role_name(user)
+        if role_name is not None:
+            claims["role"] = role_name
+
+        return claims
+
+    @staticmethod
+    def _build_role_response(role):
+        if not role:
+            return None
+
+        return {
+            "id": role.id,
+            "name": role.name,
+            "description": role.description,
+            "is_system_role": role.is_system_role,
+            "is_active": role.is_active,
+        }
+
+    @classmethod
+    def _build_user_response(cls, user):
         return {
             "id": user.id,
             "name": user.name,
             "email": user.email,
             "is_active": user.is_active,
-            "is_super_admin": user.is_super_admin,
+            "is_super_admin": cls._is_super_admin(user),
+            "role": cls._build_role_response(user.role),
         }
 
     def login(self, email: str, password: str):
@@ -53,7 +89,7 @@ class AuthService:
 
         token_pair = self.jwt_util.create_token_pair(
             subject=str(user.id),
-            extra_claims={"email": user.email, "is_super_admin": user.is_super_admin},
+            extra_claims=self._build_token_claims(user),
         )
 
         return {
@@ -70,7 +106,7 @@ class AuthService:
         )
         token_pair = self.jwt_util.create_token_pair(
             subject=str(user.id),
-            extra_claims={"email": user.email, "is_super_admin": user.is_super_admin},
+            extra_claims=self._build_token_claims(user),
         )
 
         return {
@@ -98,7 +134,7 @@ class AuthService:
 
         token_pair = self.jwt_util.create_token_pair(
             subject=str(user.id),
-            extra_claims={"email": user.email, "is_super_admin": user.is_super_admin},
+            extra_claims=self._build_token_claims(user),
         )
 
         return {

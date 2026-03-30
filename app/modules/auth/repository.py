@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.exceptions import ConflictException, DatabaseException
 from app.db.models import PasswordResetOTP, User
@@ -14,13 +14,21 @@ class AuthRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_user(self, name: str, email: str, hashed_password: str, is_super_admin: bool = False):
+    def create_user(
+        self,
+        name: str,
+        email: str,
+        hashed_password: str,
+        is_super_admin: bool = False,
+        role_id: uuid.UUID | None = None,
+    ):
         try:
             new_user = User(
                 name=name,
                 email=email,
                 password_hash=hashed_password,
                 is_super_admin=is_super_admin,
+                role_id=role_id,
             )
             self.db.add(new_user)
             self.db.commit()
@@ -38,19 +46,37 @@ class AuthRepository:
 
     def get_user_by_email(self, email: str):
         try:
-            return self.db.query(User).filter(User.email == email).first()
+            return (
+                self.db.query(User)
+                .options(joinedload(User.role))
+                .filter(User.email == email)
+                .first()
+            )
         except SQLAlchemyError as exc:
             self.db.rollback()
             raise DatabaseException(message="Unable to load the user right now.") from exc
 
     def get_user_by_id(self, user_id: uuid.UUID):
         try:
-            return self.db.query(User).filter(User.id == user_id).first()
+            return (
+                self.db.query(User)
+                .options(joinedload(User.role))
+                .filter(User.id == user_id)
+                .first()
+            )
         except SQLAlchemyError as exc:
             self.db.rollback()
             raise DatabaseException(message="Unable to load the user right now.") from exc
         
-    def update_user(self, user_id: uuid.UUID, name: str | None = None, email: str | None = None, hashed_password: str | None = None):
+    def update_user(
+        self,
+        user_id: uuid.UUID,
+        name: str | None = None,
+        email: str | None = None,
+        hashed_password: str | None = None,
+        role_id: uuid.UUID | None = None,
+        is_super_admin: bool | None = None,
+    ):
         try:
             user = self.db.query(User).filter(User.id == user_id).first()
             if not user:
@@ -64,6 +90,10 @@ class AuthRepository:
                 user.email = email
             if hashed_password is not None:
                 user.password_hash = hashed_password
+            if role_id is not None:
+                user.role_id = role_id
+            if is_super_admin is not None:
+                user.is_super_admin = is_super_admin
             self.db.commit()
             self.db.refresh(user)
             return user

@@ -1,7 +1,13 @@
+from __future__ import annotations
+
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, Boolean, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from app.db.models.users import User
 
 from app.db.base import Base
 
@@ -22,3 +28,4 @@ class Role(Base):
     is_system_role: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    users: Mapped[list[User]] = relationship("User", back_populates="role")
