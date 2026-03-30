@@ -1,9 +1,17 @@
 import asyncio
+import sys
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 from app.core.settings import settings
 from app.db.session import SessionLocal
 from app.db.models import User
 from app.modules.auth.repository import AuthRepository
+from app.modules.roles.repository import RoleRepository
+from app.modules.roles.service import RoleService
 from app.utils.bcrypt_util import BcryptUtil
 
 
@@ -43,5 +51,20 @@ async def seed_super_admin():
         db.close()
 
 
+async def seed_roles():
+    db = SessionLocal()
+    try:
+        role_service = RoleService(RoleRepository(db))
+        result = role_service.seed_default_roles()
+        print(
+            f"Roles seeded successfully. Created: {result['created']}, Updated: {result['updated']}."
+        )
+    except Exception as e:
+        print(f"Error seeding roles: {e}")
+        raise
+    finally:
+        db.close()
+
 if __name__ == "__main__":
     asyncio.run(seed_super_admin())
+    asyncio.run(seed_roles())
