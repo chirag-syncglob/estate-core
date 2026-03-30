@@ -183,3 +183,34 @@ class AuthService:
             "message": "Password reset successful",
             "user": self._build_user_response(updated_user),
         }
+
+    def change_password(self, user_id: uuid.UUID, old_password: str, new_password: str):
+        user = self.auth_repository.get_user_by_id(user_id)
+        if not user:
+            raise AuthenticationException(
+                message="User not found.",
+                code="user_not_found",
+            )
+
+        if not BcryptUtil.verify_password(old_password, user.password_hash):
+            raise AuthenticationException(
+                message="Old password is incorrect.",
+                code="invalid_old_password",
+            )
+
+        if old_password == new_password:
+            raise BadRequestException(
+                message="New password must be different from the old password.",
+                code="new_password_must_be_different",
+            )
+
+        hashed_password = BcryptUtil.hash_password(new_password)
+        updated_user = self.auth_repository.update_user(
+            user_id=user.id,
+            hashed_password=hashed_password,
+        )
+
+        return {
+            "message": "Password changed successfully",
+            "user": self._build_user_response(updated_user),
+        }

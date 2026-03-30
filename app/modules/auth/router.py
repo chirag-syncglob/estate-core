@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, status
 
 from app.modules.auth.dependencies import get_auth_service, get_current_user_id
 from app.modules.auth.schema import (
+    ChangePasswordSchema,
     ForgotPasswordSchema,
     LoginSchema,
     RefreshTokenSchema,
@@ -57,5 +58,18 @@ async def reset_password(
     return auth_service.reset_password(
         email=data.email,
         otp=data.otp,
+        new_password=data.new_password,
+    )
+
+
+@router.post("/change-password")
+async def change_password(
+    data: ChangePasswordSchema,
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    return auth_service.change_password(
+        user_id=current_user_id,
+        old_password=data.old_password,
         new_password=data.new_password,
     )
