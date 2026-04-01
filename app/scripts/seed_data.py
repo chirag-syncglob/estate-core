@@ -9,9 +9,9 @@ if str(ROOT_DIR) not in sys.path:
 from app.core.settings import settings
 from app.db.models import User
 from app.db.session import SessionLocal
-from app.modules.auth.repository import AuthRepository
 from app.modules.roles.repository import RoleRepository
 from app.modules.roles.service import RoleService
+from app.modules.users.repository import UserRepository
 from app.utils.bcrypt_util import BcryptUtil
 
 
@@ -33,9 +33,9 @@ async def seed_super_admin():
 
         super_admin = db.query(User).filter_by(email=super_admin_email).first()
         if super_admin:
-            auth_repo = AuthRepository(db)
+            user_repository = UserRepository(db)
             if super_admin.role_id != super_admin_role.id or not super_admin.is_super_admin:
-                auth_repo.update_user(
+                user_repository.update_user(
                     user_id=super_admin.id,
                     role_id=super_admin_role.id,
                     is_super_admin=True,
@@ -44,11 +44,11 @@ async def seed_super_admin():
             print("Super admin already exists.")
             return
 
-        auth_repo = AuthRepository(db)
+        user_repository = UserRepository(db)
 
         hashed_password = BcryptUtil.hash_password(super_admin_password)
 
-        auth_repo.create_user(
+        user_repository.create_user(
             name="Super Admin",
             email=super_admin_email,
             hashed_password=hashed_password,

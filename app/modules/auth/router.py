@@ -21,11 +21,6 @@ async def login(data: LoginSchema, auth_service: AuthService = Depends(get_auth_
     return auth_service.login(data.email, data.password)
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(data: RegisterSchema, auth_service: AuthService = Depends(get_auth_service)):
-    return auth_service.register(data.username, data.email, data.password)
-
-
 @router.post("/refresh")
 async def refresh_tokens(
     data: RefreshTokenSchema,
