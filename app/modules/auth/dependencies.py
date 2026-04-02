@@ -23,6 +23,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 class AuthContext:
     user_id: uuid.UUID
     role: str | None
+    company_id: uuid.UUID | None
     is_super_admin: bool
 
 
@@ -84,11 +85,25 @@ def get_current_auth_context(
 
     role = payload.get("role")
     normalized_role = str(role).strip().upper() if role is not None else None
+    company_id_value = payload.get("company_id")
+    try:
+        company_id = (
+            uuid.UUID(str(company_id_value))
+            if company_id_value is not None
+            else None
+        )
+    except ValueError as exc:
+        raise AuthenticationException(
+            message="Invalid or expired access token.",
+            code="invalid_access_token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
     is_super_admin = bool(payload.get("is_super_admin")) or normalized_role == "SUPER_ADMIN"
 
     return AuthContext(
         user_id=user_id,
         role=normalized_role,
+        company_id=company_id,
         is_super_admin=is_super_admin,
     )
 

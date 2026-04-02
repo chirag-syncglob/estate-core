@@ -8,7 +8,8 @@ class CreateUserSchema(BaseModel):
 
     name: str = Field(min_length=1, max_length=255)
     email: EmailStr
-    role_id: UUID | None = None
+    role_id: UUID
+    company_id: UUID | None = None
 
 
 class UpdateUserSchema(BaseModel):

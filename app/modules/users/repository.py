@@ -21,6 +21,7 @@ class UserRepository:
         is_active: bool = True,
         is_super_admin: bool = False,
         role_id: uuid.UUID | None = None,
+        company_id: uuid.UUID | None = None,
     ):
         try:
             new_user = User(
@@ -30,6 +31,7 @@ class UserRepository:
                 is_active=is_active,
                 is_super_admin=is_super_admin,
                 role_id=role_id,
+                company_id=company_id,
             )
             self.db.add(new_user)
             self.db.commit()
@@ -57,21 +59,29 @@ class UserRepository:
             self.db.rollback()
             raise DatabaseException(message="Unable to load the user right now.") from exc
 
-    def get_user_by_id(self, user_id: uuid.UUID):
+    def get_user_by_id(
+        self,
+        user_id: uuid.UUID,
+        company_id: uuid.UUID | None = None,
+    ):
         try:
-            return (
+            query = (
                 self.db.query(User)
                 .options(joinedload(User.role))
-                .filter(User.id == user_id)
-                .first()
             )
+            if company_id is not None:
+                query = query.filter(User.company_id == company_id)
+            return query.filter(User.id == user_id).first()
         except SQLAlchemyError as exc:
             self.db.rollback()
             raise DatabaseException(message="Unable to load the user right now.") from exc
 
-    def get_all_users(self):
+    def get_all_users(self, company_id: uuid.UUID | None = None):
         try:
-            return self.db.query(User).options(joinedload(User.role)).all()
+            query = self.db.query(User).options(joinedload(User.role))
+            if company_id is not None:
+                query = query.filter(User.company_id == company_id)
+            return query.all()
         except SQLAlchemyError as exc:
             self.db.rollback()
             raise DatabaseException(message="Unable to load users right now.") from exc

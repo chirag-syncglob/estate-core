@@ -48,6 +48,8 @@ class AuthService:
         role_name = cls._get_role_name(user)
         if role_name is not None:
             claims["role"] = role_name
+        if user.company_id is not None:
+            claims["company_id"] = str(user.company_id)
 
         return claims
 
@@ -70,6 +72,7 @@ class AuthService:
             "id": user.id,
             "name": user.name,
             "email": user.email,
+            "company_id": user.company_id,
             "is_active": user.is_active,
             "is_super_admin": cls._is_super_admin(user),
             "role": cls._build_role_response(user.role),
