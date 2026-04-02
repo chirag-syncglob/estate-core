@@ -92,3 +92,16 @@ class CompanyRepository:
         except SQLAlchemyError as exc:
             self.db.rollback()
             raise DatabaseException(message="Unable to update the company right now.") from exc
+
+    def get_company_by_user_id(self, user_id: uuid.UUID):
+        try:
+            return (
+                self.db.query(Company)
+                .join(Company.users)
+                .options(joinedload(Company.admin).joinedload(User.role))
+                .filter(User.id == user_id)
+                .first()
+            )
+        except SQLAlchemyError as exc:
+            self.db.rollback()
+            raise DatabaseException(message="Unable to load the company right now.") from exc

@@ -129,3 +129,22 @@ class UserRepository:
         except SQLAlchemyError as exc:
             self.db.rollback()
             raise DatabaseException(message="Unable to update the user right now.") from exc
+
+
+    def list_users_by_company_id(self, company_id: uuid.UUID):
+        try:
+            return (
+                self.db.query(User)
+                .options(joinedload(User.role))
+                .filter(User.company_id == company_id)
+                .all()
+            )
+        except IntegrityError as exc:
+            self.db.rollback()
+            raise ConflictException(
+                message="A user with this email already exists.",
+                code="user_already_exists",
+            ) from exc
+        except SQLAlchemyError as exc:
+            self.db.rollback()
+            raise DatabaseException(message="Unable to load users right now.") from exc
